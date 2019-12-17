@@ -43,7 +43,8 @@ def mergeNetCDF4Directory(directoryName, fileBeginning, outputFileName, separato
     for filename in os.listdir(directoryName) :
         if filename.startswith(fileBeginning) :
             print(directoryName + "/" + filename)
-            getVariables(net.Dataset(directoryName + "/" + filename), pandadata, variables)
+            pandadata = pandadata.append(getVariables(net.Dataset(directoryName + "/" + filename), pandadata, variables),
+                                         ignore_index = True)
     
     pandadata.to_csv(path_or_buf=outputFileName, sep = separator)
     
@@ -70,6 +71,5 @@ def getVariables(dat, datframe, variables):
         except KeyError:
             print("Something went wrong (a dataset is either corrupted or didn't process right) \n skipping this dataset")
             return
-
-    datframe = datframe.append(tempData, ignore_index = True)
+    return tempData
     

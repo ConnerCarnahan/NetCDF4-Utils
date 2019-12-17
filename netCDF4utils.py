@@ -66,7 +66,7 @@ def getVariables(dat, datframe, variables):
                 temparray = np.array(dat.variables[s][:][0])
                 #temparray[temparray=='--'] = np.nan
                 tempData[s]= [temparray]
-        except:
+        except KeyError:
             print("Something went wrong (a dataset is either corrupted or didn't process right) \n skipping this dataset")
             return
 

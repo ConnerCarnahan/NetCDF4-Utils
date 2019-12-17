@@ -42,6 +42,7 @@ def mergeNetCDF4Directory(directoryName, fileBeginning, outputFileName, separato
     
     for filename in os.listdir(directoryName) :
         if filename.startswith(fileBeginning) :
+            print(directoryName + "/" + filename)
             getVariables(net.Dataset(directoryName + "/" + filename), pandadata, variables)
     
     pandadata.to_csv(path_or_buf=outputFileName, sep = separator)

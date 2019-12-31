@@ -13,6 +13,8 @@ import os
 import netCDF4 as net
 import numpy as np
 import pandas as pd
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 
 DEFAULT_VARIABLES = ['occ_id','start_time','lat','lon','overall_qual','snr_L2p','bangle','impact','impact_opt','refrac',
                      'alt_refrac','geop_refrac','undulation','r_coc','roc']
@@ -66,8 +68,8 @@ def getVariables(dat, datframe, variables):
                 tempData[s] = [w]
             else :
                 temparray = np.array(dat.variables[s][:][0])
-                #temparray[temparray=='--'] = np.nan
-                tempData[s]= [temparray]
+                temparray[temparray=='--'] = np.nan
+                tempData[s] = [temparray]
         except KeyError:
             print("Something went wrong (a dataset is either corrupted or didn't process right) \n skipping this dataset")
             return

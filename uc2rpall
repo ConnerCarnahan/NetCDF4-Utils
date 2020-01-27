@@ -1,0 +1,12 @@
+#!/bin/bash
+
+FILES=./atmphs/*
+
+for file in $FILES
+do
+    foo=$(basename $file)
+    foo2="outputROPP_"
+    foo3=${foo/atmPhs_/$foo2}
+    ucar2ropp $file -o $foo3
+    mv $foo3 ./outputRopp
+done

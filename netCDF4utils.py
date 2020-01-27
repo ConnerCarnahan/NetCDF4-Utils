@@ -5,7 +5,7 @@ Script Name: netCDF4Utils.py
 Creation Date: 12/17/2019
 Last Updated: 12/17/2019 by Conner Carnahan
 Description: Various scripts for dealing with netCDF4 files to make them more usable in python environments
-Dependencies: python, os, netCDF4, numpy, pandas
+Dependencies: python, os, netCDF4, numpy, pandas, sys, matplotlib.pyplot
 Disclaimer: THIS CODE IS PROVIDED AS IS WITH NO GUARENTEES OF STABLE USAGE.
 """
 
@@ -79,7 +79,7 @@ def getVariables(dat, datframe, variables):
 def ReadMergedCSV(fname, datframe):
     """ ReadMergedCSV(string fname, pandas dataframe datframe):
         This will read the csv file created by mergeNetCDF4Directory and overwrite datframe with the values
-        
+        Returns: datframe
         Notes: 
         It is a little computationally expensive, since it has to parse a bunch of strings to floats for every occultation
         and perhaps there is a way around this but currently I am not optimizing, just getting things to work
@@ -91,15 +91,15 @@ def ReadMergedCSV(fname, datframe):
     mergeData = pd.read_csv(fname,sep='|')
     mergeData = mergeData.loc[:, ~mergeData.columns.str.contains('^Unnamed')]
     for s in mergeData.columns:
-        print("Converting Columns: ")
+        print("Converting Columns: " + s)
         if s != 'occ_id' and isinstance(mergeData[s][0], str):
-            print(s)
             for i in np.arange(len(mergeData.index)):
                 temp = np.array(mergeData[s][i].replace('\n','')[1:-1].split(' '))
                 temp = temp[temp != '']
                 temp = temp.astype(np.float)
                 mergeData[s][i]=temp
     datframe = mergeData
+    return mergeData
 
 def plotslopeoflnrefrac(datframe):
     """ plotslopeoflnrefrac(pandas dataframe):

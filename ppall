@@ -1,0 +1,16 @@
+#!/bin/bash
+
+FILES=./outputRopp/outputROPP_*
+ext="./postprocess/"
+
+for file in $FILES
+do
+    foo=$(basename $file)
+    foo2="postprocess_"
+    foo3=${foo/outputROPP_/$foo2}
+    if test ! -f $ext$foo3; then
+        echo $ext$foo3
+	ropp_pp_occ_tool $file -o $foo3
+        mv $foo3 ./postprocess
+    fi
+done

@@ -3,7 +3,7 @@ Creator: Conner Carnahan
 Company: GeoOptics
 Script Name: netCDF4Utils.py
 Creation Date: 12/17/2019
-Last Updated: 12/17/2019 by Conner Carnahan
+Last Updated: 2/2/2019 by Conner Carnahan
 Description: Various scripts for dealing with netCDF4 files to make them more usable in python environments
 Dependencies: python, os, netCDF4, numpy, pandas, sys, matplotlib.pyplot
 Disclaimer: THIS CODE IS PROVIDED AS IS WITH NO GUARENTEES OF STABLE USAGE.
@@ -137,12 +137,10 @@ def da(a):
     return dat
 
 def dlnf(f,t):
-    """ dlnf(numpy array f, numpy array t):
-        This returns an array that is a first order approximation of the derivative of logarithm of f which is a function of t
-    """
-    df = da(f)
-    dt = da(t)
-    return np.divide(df,np.multiply(dt,f[:-1]))-np.divide(np.multiply(df,df),2*np.multiply(dt,np.multiply(f[:-1],f[:-1])))
+    dln = np.zeros(len(f)-1)
+    for i in np.arange(len(f)-1):
+        dln[i] = np.divide(1-np.divide(f[i],f[i+1]),t[i+1]-t[i])
+    return dln
 
 def plotbindataaverage(datframe, xname, yname, minx, maxx, binsize):
     """ plotbindataverage(datframe pandas dataframe, xname string, yname string, minx float, maxx float, binsize = float):
@@ -152,7 +150,7 @@ def plotbindataaverage(datframe, xname, yname, minx, maxx, binsize):
     ybins = np.zeros(len(xbins))
     ybins[0] = np.average(datframe[yname][datframe[xname] < xbins[1]])
     for i in np.arange(len(xbins)-2):
-        ybins[i+1] = np.average(datframe[yname][(datframe[xname] < xbins[i+2]) & (datframe[xname] > i)])
+        ybins[i+1] = np.average(datframe[yname][(datframe[xname] < xbins[i+2]) & (datframe[xname] > xbins[i])])
     ybins[len(ybins)-1] = np.average(datframe[yname][datframe[xname] > xbins[len(ybins)-2]])
     
     fig = plt.figure(figsize=(12,10))
@@ -163,13 +161,19 @@ def plotbindataaverage(datframe, xname, yname, minx, maxx, binsize):
     plt.legend()
     plt.show()
 
-def appenddlnvar(datframe, varname, tname):
-    """ appenddlnvar(datframe pandas dataframe, varname string, tname):
-        appends the estimated change in the natural logarithm of a variable (varname) (which should be an array) with respect to tname (should be an array of
-        the same length of varname's array)
-        returns a pandas dataframe but also updates the datframe anyway
-    """
+def appenddlnvar(datframe, varname, tname, lbound, ubound):
     dln = np.zeros(len(datframe.index))
     for i in np.arange(len(datframe.index)):
-        dln[i] = np.average(dlnf(datframe[varname][i],datframe[tname][i]))
-    return datframe.insert(len(datframe.columns),'dln' + varname, dln)
+        dln2 = dlnf(datframe[varname][i],datframe[tname][i])
+        dln[i] = np.average(dln2[(dln2>lbound)&(dln2<ubound)])
+    datframe.insert(len(datframe.columns),'dln' + varname, dln)
+
+def appendAvg(datframe, varname):
+    """ appendlnvar(datframe pandas dataframe, varname string, ttname string):
+        appends the average of an array entry in a specific row to the row
+        returns none
+    """
+    avg = np.zeros(len(datframe.index))
+    for i in np.arange(len(datframe.index)):
+        avg[i] = np.average(datframe[varname][i])
+    return datframe.insert(len(datframe.columns),'avg'+varname,avg)

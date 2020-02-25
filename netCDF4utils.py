@@ -142,16 +142,32 @@ def dlnf(f,t):
         dln[i] = np.divide(1-np.divide(f[i],f[i+1]),t[i+1]-t[i])
     return dln
 
-def plotbindataaverage(datframe, xname, yname, minx, maxx, binsize):
-    """ plotbindataverage(datframe pandas dataframe, xname string, yname string, minx float, maxx float, binsize = float):
+def plotbindataaverage(datframe, xname, yname, minx, maxx, binsize, ubound = np.inf, lbound = -np.inf, minsnr = 0):
+    """ plotbindataverage(datframe pandas dataframe, xname string, yname string, minx float, maxx float, binsize = float, ubound = np.inf, lbound = -np.inf, minsnr = 0):
         This plots the average values of binned data, minx should be < maxx, binsize should be positive
+        xname is the name of the xvariable, yname is the yvariable
+        datframe is the dataframe that holds the data
+        ubound and lbound are the upper and lower bounds respectively on what data is averaged for the y values (this is for minimizing artifacts in data)
+        minsnr is the minimum value that the avgsnr_L2p variable can have for the graphed data
     """
     xbins = np.linspace(minx,maxx,num = (int)((maxx-minx)/binsize))
     ybins = np.zeros(len(xbins))
-    ybins[0] = np.average(datframe[yname][datframe[xname] < xbins[1]])
+    ybins[0] = np.average(datframe[yname][(datframe[xname] < xbins[1])
+                                          & (datframe[yname] > lbound)
+                                          & (datframe[yname] < ubound)
+                                          & (datframe['avgsnr_L2p'] > minsnr)])
+    
     for i in np.arange(len(xbins)-2):
-        ybins[i+1] = np.average(datframe[yname][(datframe[xname] < xbins[i+2]) & (datframe[xname] > xbins[i])])
-    ybins[len(ybins)-1] = np.average(datframe[yname][datframe[xname] > xbins[len(ybins)-2]])
+        ybins[i+1] = np.average(datframe[yname][(datframe[xname] < xbins[i+2]) 
+                                                & (datframe[xname] > xbins[i]) 
+                                                & (datframe[yname] > lbound)
+                                                & (datframe[yname] < ubound)
+                                                & (datframe['avgsnr_L2p'] > minsnr)])
+        
+    ybins[len(ybins)-1] = np.average(datframe[yname][(datframe[xname] > xbins[len(ybins)-2])
+                                                    & (datframe[yname] > lbound)
+                                                    & (datframe[yname] < ubound)
+                                                    & (datframe['avgsnr_L2p'] > minsnr)])
     
     fig = plt.figure(figsize=(12,10))
     a = plt.axes()
@@ -160,6 +176,34 @@ def plotbindataaverage(datframe, xname, yname, minx, maxx, binsize):
     plt.ylabel(yname)
     plt.legend()
     plt.show()
+
+
+def plotscrubdataverage(datframe, xname, yname, minx, maxx, scrubsize,ubound = np.inf, lbound = -np.inf,
+                        minsnr = 0, num = 100):
+    """plotscrubdataverage(pandas dataframe datfame, string xname, string yname, float minx, float maxx, array of floats scrubsize,
+                           float ubound = np.inf, float lbound = -np.inf, minsnr = 0, num = 100)
+    """
+    fig = plt.figure(figsize=(12,10))
+    a = plt.axes()
+    
+    for x in scrubsize:
+        xlefts = np.linspace(minx,maxx,num)
+        xrights = xlefts + x
+        ybins = np.zeros(num)
+        for i in np.arange(num):
+            ybins[i] = np.average(datframe[yname][(datframe[xname] > xlefts[i]) 
+                                                 & (datframe[xname] < xrights[i])
+                                                 & (datframe[yname] < ubound)
+                                                 & (datframe[yname] > lbound)
+                                                 & (datframe['avgsnr_L2p'] > minsnr)]) 
+        a.plot(xlefts + x/2,ybins, label = 'Scrub Size: ' + str(x))
+    
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.legend()
+    plt.show()
+
+
 
 def appenddlnvar(datframe, varname, tname, lbound, ubound):
     dln = np.zeros(len(datframe.index))
@@ -177,3 +221,5 @@ def appendAvg(datframe, varname):
     for i in np.arange(len(datframe.index)):
         avg[i] = np.average(datframe[varname][i])
     return datframe.insert(len(datframe.columns),'avg'+varname,avg)
+
+def cleanData(datframe):

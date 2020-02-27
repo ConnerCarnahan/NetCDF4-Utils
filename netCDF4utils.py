@@ -3,7 +3,7 @@ Creator: Conner Carnahan
 Company: GeoOptics
 Script Name: netCDF4Utils.py
 Creation Date: 12/17/2019
-Last Updated: 2/2/2019 by Conner Carnahan
+Last Updated: 2/25/2019 by Conner Carnahan
 Description: Various scripts for dealing with netCDF4 files to make them more usable in python environments
 Dependencies: python, os, netCDF4, numpy, pandas, sys, matplotlib.pyplot
 Disclaimer: THIS CODE IS PROVIDED AS IS WITH NO GUARENTEES OF STABLE USAGE.
@@ -137,9 +137,12 @@ def da(a):
     return dat
 
 def dlnf(f,t):
+    """ dlnf(numpy array f, numpy array t):
+        approximates the value of the derivative of the natural log of a variable with respect to t, given a linear relationship.
+    """
     dln = np.zeros(len(f)-1)
-    for i in np.arange(len(f)-1):
-        dln[i] = np.divide(1-np.divide(f[i],f[i+1]),t[i+1]-t[i])
+    for i in np.arange(len(f)-2):
+        dln[i] = np.divide(f[i+2]-f[i],f[i+1]*(t[i+2]-t[i]))
     return dln
 
 def plotbindataaverage(datframe, xname, yname, minx, maxx, binsize, ubound = np.inf, lbound = -np.inf, minsnr = 0):
@@ -174,7 +177,31 @@ def plotbindataaverage(datframe, xname, yname, minx, maxx, binsize, ubound = np.
     a.plot(xbins,ybins,'b.-')
     plt.xlabel(xname)
     plt.ylabel(yname)
-    plt.legend()
+    plt.show()
+
+def plotnuminbin(datframe, xname, minx, maxx, binsize): 
+    """ plotnuminbin(pandas dataframe datframe, string xname, float minx, float maxx, float binsize):
+        This plots the number of rows that are put into bins based on their values for the variable xname.
+        minx sets the minimum of the graph
+        maxx sets the maximum
+        binsize sets the size of the bins
+    """
+    xbins = np.linspace(minx,maxx,num = (int)((maxx-minx)/binsize))
+    ybins = np.zeros(len(xbins))
+    
+    ybins[0] = np.size(datframe.index[(datframe[xname] < xbins[1])])
+    
+    for i in np.arange(len(xbins)-2):
+        ybins[i+1] = np.size(datframe.index[(datframe[xname] < xbins[i+2]) 
+                                                & (datframe[xname] > xbins[i])])
+        
+    ybins[len(ybins)-1] = np.size(datframe.index[(datframe[xname] > xbins[len(ybins)-2])])
+    
+    fig = plt.figure(figsize=(12,10))
+    a = plt.axes()
+    a.plot(xbins,ybins,'b.-')
+    plt.xlabel(xname)
+    plt.ylabel('Num')
     plt.show()
 
 
@@ -200,12 +227,15 @@ def plotscrubdataverage(datframe, xname, yname, minx, maxx, scrubsize,ubound = n
     
     plt.xlabel(xname)
     plt.ylabel(yname)
-    plt.legend()
     plt.show()
 
 
 
 def appenddlnvar(datframe, varname, tname, lbound, ubound):
+    """ appenddlnvar(pandas dataframe datfame, string varname, string tname, float lbound, float ubound):
+        This appends the value of the derivative of a natural log of a variable with respect to t.
+        It then averages this over the column array and will only average values between lbound and ubound
+    """
     dln = np.zeros(len(datframe.index))
     for i in np.arange(len(datframe.index)):
         dln2 = dlnf(datframe[varname][i],datframe[tname][i])
@@ -222,4 +252,34 @@ def appendAvg(datframe, varname):
         avg[i] = np.average(datframe[varname][i])
     return datframe.insert(len(datframe.columns),'avg'+varname,avg)
 
-def cleanData(datframe):
+def PlotRowArrays(datframe, fname, tname, index, showids = False):
+    """ PlotRowArrays(pdataframe datframe, string fname, string tname, array of indeces index, showids = False):
+        This plots the values of each row's fname column vs its tname for each row in index.
+        On the plot you can specify if you want the occultation id to be labeled on the graph
+    """
+    fig = plt.figure(figsize=(12,10))
+    a = plt.axes()
+    for i in index:
+        a.plot(datframe.geop_refrac[i],datframe.refrac[i], label = datframe.occ_id[i])
+    plt.xlabel(tname)
+    plt.ylabel(fname)
+    if showids:
+        plt.legend()
+    plt.show()
+
+def AppendFunc(datframe, fname, func, funcname):
+    """ AppendFunc(pandas dataframe datframe, string fname, function func, string funcname):
+        The purpose of this is to append a value to a dataframe based on the value of a function of one of the columns of the dataframe.
+        For example: if I wanted to add an average of an array in a certain column for each row then I would apply this with np.average in the func spot
+        datframe is the dataframe you want to append
+        fname is the name of the variable
+        func is a function you want to apply to the fname variable
+        funcname is the name you want for the new column (it will end up being funcname'_'fname)
+    """
+    b = np.zeros(len(datframe.index))
+    for i in datframe.index:
+        b[i] = func(datframe[fname][i])
+    datframe.insert(len(datframe.columns),funcname + '_' +  fname, b)
+
+
+#def cleanData(datframe):
